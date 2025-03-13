@@ -26,8 +26,8 @@ function App() {
       const geo_json = await geo_response.json()
       
       // if the city is not found then throw an error
-      if (geo_json.length < 1){
-        throw new Error("Location not found")
+      if (geo_json.length < 1 || geo_json[0]['addresstype'] !== "city"){
+        throw new Error(`Latitude and Longitude not found for ${city}. Please check your spelling.`)
       }
 
       // get the breweries closest to that city
@@ -40,11 +40,13 @@ function App() {
       if (tempList.length < 10){
         throw new Error("Not enough breweries in this location")
       }
+      
 
       // create a button out of this city if we do not have it yet
       if (!knownCities.includes(city)){
         setKnownCities([...knownCities, city.replaceAll('_', ' ')])
       }
+      setCurrentCity(city);
 
       // set variables and update the list
       setCurrLat(lat)
@@ -68,7 +70,6 @@ function App() {
     if(typedCity.trim().length === 0){
       return
     }
-    setCurrentCity(typedCity);
     typedCity = typedCity.replaceAll(' ', '_')
     getBreweryDataByCity(typedCity, 10);
     typedCity = ""
