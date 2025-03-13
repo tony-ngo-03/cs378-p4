@@ -41,12 +41,11 @@ function App() {
         throw new Error("Not enough breweries in this location")
       }
       
-
       // create a button out of this city if we do not have it yet
       if (!knownCities.includes(city)){
         setKnownCities([...knownCities, city.replaceAll('_', ' ')])
       }
-      setCurrentCity(city);
+      setCurrentCity(city.replaceAll('_', ' '));
 
       // set variables and update the list
       setCurrLat(lat)
