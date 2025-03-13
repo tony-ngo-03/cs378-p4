@@ -1,92 +1,105 @@
 import './App.css';
-import MenuItem from './components/MenuItem';
+import React, {useState, useEffect} from 'react';
 
-// import 'bootstrap/dist/css/bootstrap.min.css'; // This imports bootstrap css styles. You can use bootstrap or your own classes by using the className attribute in your elements.
-
-// Menu data. An array of objects where each object represents a menu item. Each menu item has an id, title, description, image name, and price.
-// You can use the image name to get the image from the images folder.
-const menuItems = [
-  {
-    id: 1,
-    title: 'Gyoza',
-    description: 'Japanese dumplings',
-    imageName: 'gyoza.png',
-    price: 5.99,
-  },
-  {
-    id: 2,
-    title: 'Sushi',
-    description: 'Japanese rice rolls',
-    imageName: 'sushi.png',
-    price: 6.99,
-  },
-  {
-    id: 3,
-    title: 'Ramen',
-    description: 'Japanese noodle soup',
-    imageName: 'ramen.png',
-    price: 7.99,
-  },
-  {
-    id: 4,
-    title: 'Matcha Cake',
-    description: 'Japanese green tea cake',
-    imageName: 'matcha-cake.png',
-    price: 4.99,
-  },
-  {
-    id: 5,
-    title: 'Mochi',
-    description: 'Japanese rice cake',
-    imageName: 'mochi.png',
-    price: 3.99,
-  },
-  {
-    id: 6,
-    title: 'Yakitori',
-    description: 'Japanese skewered chicken',
-    imageName: 'yakitori.png',
-    price: 2.99,
-  },
-  {
-    id: 7,
-    title: 'Takoyaki',
-    description: 'Japanese octopus balls',
-    imageName: 'takoyaki.png',
-    price: 5.99,
-  },
-  {
-    id: 8,
-    title: 'Sashimi',
-    description: 'Japanese raw fish',
-    imageName: 'sashimi.png',
-    price: 8.99,
-  },
-  {
-    id: 9,
-    title: 'Okonomiyaki',
-    description: 'Japanese savory pancake',
-    imageName: 'okonomiyaki.png',
-    price: 6.99,
-  },
-  {
-    id: 10,
-    title: 'Katsu Curry',
-    description: 'Japanese curry with fried pork',
-    imageName: 'katsu-curry.png',
-    price: 9.99,
-  }
-];
-
+import 'bootstrap/dist/css/bootstrap.min.css'; // This imports bootstrap css styles. You can use bootstrap or your own classes by using the className attribute in your elements.
+import LocationButton from './components/LocationButton';
+import BreweryItem from './components/BreweryItem';
 
 function App() {
+
+  // API for finding breweries
+  const brewery_url = "https://api.openbrewerydb.org/v1/breweries"
+
+  // use states for variable handling
+  const [breweryList, setBreweryList] = useState([]);
+  const [knownCities, setKnownCities] = useState(['Austin', 'Dallas', 'Houston'])
+  const [errorText, setErrorText] = useState("")
+  const [currLat, setCurrLat] = useState(0.0)
+  const [currLon, setCurrLon] = useState(0.0)
+  
+  async function getBreweryDataByCity(city, amount){
+    try{
+      // geocode the city first to lat, long
+      const geo_response = await fetch(`https://nominatim.openstreetmap.org/search?q=${city}&format=json`)
+      const geo_json = await geo_response.json()
+      
+      // if the city is not found then throw an error
+      if (geo_json.length < 1){
+        throw new Error("Location not found")
+      }
+
+      // get the breweries closest to that city
+      const lat = geo_json[0].lat
+      const lon = geo_json[0].lon
+      const response = await fetch(brewery_url + `?by_dist=${lat},${lon}&page=1&per_page=${amount}`);
+      const tempList = await response.json();
+
+      // we need at least 10 data points so if for some reason there is not then throw an error
+      if (tempList.length < 10){
+        throw new Error("Not enough breweries in this location")
+      }
+
+      // create a button out of this city if we do not have it yet
+      if (!knownCities.includes(city)){
+        setKnownCities([...knownCities, city.replaceAll('_', ' ')])
+      }
+
+      // set variables and update the list
+      setCurrLat(lat)
+      setCurrLon(lon)
+      setBreweryList(tempList);
+    }
+    catch (err){
+      setErrorText(err.message);
+      setBreweryList([]);
+    }
+  }
+
+
+  // https://stackoverflow.com/questions/74639791/how-to-fetch-api-as-soon-as-page-is-loaded-in-react
+  useEffect(() => {
+    getBreweryDataByCity("Austin", 10);
+  }, []);
+
+  var typedCity = ""
+
+  // functionality for adding a new city
+  const addNewCity = () => {
+    if(typedCity.trim().length === 0){
+      return
+    }
+    typedCity = typedCity.replaceAll(' ', '_')
+    getBreweryDataByCity(typedCity, 10);
+    typedCity = ""
+  }
+
+
   return (
     <div>
-      <h1>Menu</h1>
-      <div className="menu">
-        {/* Display menu items dynamicaly here by iterating over the provided menuItems */}
-        <MenuItem title={menuItems[0].title} /> {/* Example for how to use a component */}
-      </div>
+      <h1>10 Closest Breweries List</h1>
+      {knownCities.map((item, index) => <LocationButton key={index} city={item} getBreweryDataByCity={getBreweryDataByCity}></LocationButton>)}
+      <input type='text' name='new-city' onChange={(e) => {typedCity = e.target.value}}></input>
+      <button onClick={addNewCity} className='rounded-2'>+</button>
+      {/* https://getbootstrap.com/docs/4.0/content/tables/ */}
+      {
+        breweryList.length < 10 ? <h1>{errorText}</h1> : <table className="table table-striped">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Address</th>
+            <th>Type</th>
+            <th>Website</th>
+            <th>Approximate Distance (km)</th>
+          </tr>
+        </thead>
+        <tbody>
+        {breweryList.map((item, index) => (
+          <BreweryItem key={index} name={item.name} address={item.street} city={item.city} state={item.state} postalCode={item.postal_code} type={item.brewery_type} website={item.website_url}
+          lon={item.longitude} lat={item.latitude} currLat={currLat} currLon={currLon}></BreweryItem>
+          ))}
+        </tbody>
+      </table>
+      }
     </div>
   );
 }
