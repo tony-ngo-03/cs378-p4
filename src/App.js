@@ -2,7 +2,7 @@ import './App.css';
 import React, {useState, useEffect} from 'react';
 
 import 'bootstrap/dist/css/bootstrap.min.css'; // This imports bootstrap css styles. You can use bootstrap or your own classes by using the className attribute in your elements.
-import LocationButton from './components/LocationButton';
+import LocationSelector from './components/LocationSelector';
 import BreweryItem from './components/BreweryItem';
 
 function App() {
@@ -16,9 +16,11 @@ function App() {
   const [errorText, setErrorText] = useState("")
   const [currLat, setCurrLat] = useState(0.0)
   const [currLon, setCurrLon] = useState(0.0)
+  const [currentCity, setCurrentCity] = useState('Austin')
   
   async function getBreweryDataByCity(city, amount){
     try{
+      
       // geocode the city first to lat, long
       const geo_response = await fetch(`https://nominatim.openstreetmap.org/search?q=${city}&format=json`)
       const geo_json = await geo_response.json()
@@ -55,31 +57,35 @@ function App() {
     }
   }
 
-
   // https://stackoverflow.com/questions/74639791/how-to-fetch-api-as-soon-as-page-is-loaded-in-react
   useEffect(() => {
     getBreweryDataByCity("Austin", 10);
   }, []);
 
   var typedCity = ""
-
   // functionality for adding a new city
   const addNewCity = () => {
     if(typedCity.trim().length === 0){
       return
     }
+    setCurrentCity(typedCity);
     typedCity = typedCity.replaceAll(' ', '_')
     getBreweryDataByCity(typedCity, 10);
     typedCity = ""
   }
 
-
   return (
     <div>
       <h1>10 Closest Breweries List</h1>
-      {knownCities.map((item, index) => <LocationButton key={index} city={item} getBreweryDataByCity={getBreweryDataByCity}></LocationButton>)}
+      
+      {/* Location Selection */}
+      <LocationSelector cities={knownCities} getBreweryDataByCity={getBreweryDataByCity} currentCity={currentCity} setCurrentCity={setCurrentCity}></LocationSelector>
       <input type='text' name='new-city' onChange={(e) => {typedCity = e.target.value}}></input>
       <button onClick={addNewCity} className='rounded-2'>+</button>
+      
+      {/* Display Data for Selected Location */}
+      {/* If there is no data or not enough data because of an error display that error */}
+      {/* Name of Brewey, Address, Type of Brewery, Website, and Approximate Distances (km) */}
       {/* https://getbootstrap.com/docs/4.0/content/tables/ */}
       {
         breweryList.length < 10 ? <h1>{errorText}</h1> : <table className="table table-striped">

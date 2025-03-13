@@ -1,8 +1,3 @@
-/* 
-  Style your elements by creating CSS classes here.
-  Below, you can see an example of a class called "menu" that changes the color of the text to blue. Modify according to your needs.
-*/
-
-.menu {
-  color: blue;
+.selected{
+  background-color: darkgrey;
 }
