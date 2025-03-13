@@ -77,7 +77,8 @@ function App() {
   return (
     <div>
       <h1>10 Closest Breweries List</h1>
-      
+      <h4>Select a city or enter your own</h4>
+      <hr></hr>
       {/* Location Selection */}
       <LocationSelector cities={knownCities} getBreweryDataByCity={getBreweryDataByCity} currentCity={currentCity} setCurrentCity={setCurrentCity}></LocationSelector>
       <input type='text' name='new-city' onChange={(e) => {typedCity = e.target.value}}></input>
